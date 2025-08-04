@@ -19,7 +19,7 @@ jobs:
       - name: Databindingファイルのカウント
         run: |
           files=$(find . -type f -path "*/layout/*" -exec grep -il "<layout" {} + | sort)
-          count=$(echo "$files" | wc -l)
+          count=$( [ -z "$files" ] && echo 0 || echo "$files" | wc -l )
           echo "file_count=$count" >> $GITHUB_OUTPUT
           
           echo "# Databindingファイル一覧" > databinding_files_report.md
