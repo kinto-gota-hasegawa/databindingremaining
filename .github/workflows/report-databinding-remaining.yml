@@ -1,0 +1,97 @@
+name: report-databinding-remaining
+
+on:
+  schedule:
+    - cron: '0 22 * * SUN'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  count-databinding-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Databindingファイルのカウント
+        run: |
+          files=$(find . -type f -path "*/layout/*" -exec grep -il "<layout" {} + | sort)
+          count=$(echo "$files" | wc -l)
+          echo "file_count=$count" >> $GITHUB_OUTPUT
+          
+          echo "# Databindingファイル一覧" > databinding_files_report.md
+          echo "" >> databinding_files_report.md
+          echo "| No. | ファイルパス |" >> databinding_files_report.md
+          echo "|-----|--------------|" >> databinding_files_report.md
+          
+          if [ "$count" -gt 0 ]; then
+            i=1
+            echo "$files" | while IFS= read -r file; do
+              echo "| $i | [${file#./}](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.repository.default_branch }}/${file#./}) |" >> databinding_files_report.md
+              i=$((i + 1))
+            done
+          else
+            echo "| - | ついにDatabinding含むファイルがなくなりました！ |" >> databinding_files_report.md
+          fi
+          
+          echo "" >> databinding_files_report.md
+          echo "## 集計結果" >> databinding_files_report.md
+          echo "" >> databinding_files_report.md
+          echo "| 項目 | 値 |" >> databinding_files_report.md
+          echo "|------|-----|" >> databinding_files_report.md
+          echo "| 合計ファイル数 | $count |" >> databinding_files_report.md
+          echo "| 実行日時 | $(TZ='Asia/Tokyo' date '+%Y年%m月%d日 %H:%M:%S') JST |" >> databinding_files_report.md
+
+      - name: Issue作成用の本文を準備
+        id: prepare-issue
+        run: |
+          report_content=$(cat databinding_files_report.md)
+          
+          {
+            echo "issue_body<<EOF"
+            echo "$report_content"
+            echo ""
+            echo "---"
+            echo "このレポートは自動生成されました。"
+            echo "実行ワークフロー: [report-databinding-remaining](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: GitHubのIssueを作成
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Databindingの残り一覧 - ${new Date().toISOString().split('T')[0]}`;
+            const body = `${{ steps.prepare-issue.outputs.issue_body }}`;
+            
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'remain-databinding'
+            });
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes(todayStr)
+            );
+            
+            if (existingIssue) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: body
+              });
+            } else {
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['remain-databinding']
+              });
+            }
