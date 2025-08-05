@@ -2,7 +2,7 @@ name: report-databinding-remaining
 
 on:
   schedule:
-    - cron: '0 22 * * SUN'
+    - cron: '51 03 * * Tue'
   workflow_dispatch:
 
 concurrency:
