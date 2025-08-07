@@ -66,10 +66,12 @@ jobs:
 
       - name: GitHubのIssueを作成
         uses: actions/github-script@v7
+        env:
+          ISSUE_BODY: ${{ steps.prepare-issue.outputs.issue_body }}
         with:
           script: |
             const title = `Databindingの残り一覧 - ${new Date().toISOString().split('T')[0]}`;
-            const body = `${{ steps.prepare-issue.outputs.issue_body }}`;
+            const body = process.env['ISSUE_BODY'];
             
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
