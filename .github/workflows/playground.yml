@@ -11,8 +11,17 @@ concurrency:
 
 jobs:
   count-databinding-files:
+    if: github.event.pull_request.draft == false &&
     runs-on: ubuntu-latest
     steps:
+      - name: Print refs
+        run: |
+          echo "head_ref: ${{ github.head_ref }}"
+          echo "ref_name: ${{ github.ref_name }}"
+          echo "ref: ${{ github.ref }}"
+          echo "event_name: ${{ github.event_name }}"
+          echo "base_ref: ${{ github.base_ref }}"
+
       - name: Checkout
         uses: actions/checkout@v4
 
