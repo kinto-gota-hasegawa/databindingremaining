@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  count-databinding-files:
+  playground-job:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
