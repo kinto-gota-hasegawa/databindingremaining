@@ -1,0 +1,29 @@
+name: Playground
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  playground-job:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print refs
+        run: |
+          echo "head_ref: ${{ github.head_ref }}"
+          echo "ref_name: ${{ github.ref_name }}"
+          echo "ref: ${{ github.ref }}"
+          echo "event_name: ${{ github.event_name }}"
+          echo "base_ref: ${{ github.base_ref }}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Databindingファイルのカウント
+        run: echo "This is a playground for test.

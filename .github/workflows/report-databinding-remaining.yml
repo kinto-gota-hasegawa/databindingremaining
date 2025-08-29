@@ -2,7 +2,7 @@ name: report-databinding-remaining
 
 on:
   schedule:
-    - cron: '0 22 * * SUN'
+    - cron: '50 05 * * Tue'
   workflow_dispatch:
 
 concurrency:
@@ -17,9 +17,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Databindingファイルのカウント
+        env:
+          SERVER_URL: ${{ github.server_url }}
+          REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           files=$(find . -type f -path "*/layout/*" -exec grep -il "<layout" {} + | sort)
-          count=$(echo "$files" | wc -l)
+          count=$( [ -z "$files" ] && echo 0 || echo "$files" | wc -l )
           echo "file_count=$count" >> $GITHUB_OUTPUT
           
           echo "# Databindingファイル一覧" > databinding_files_report.md
@@ -30,7 +34,7 @@ jobs:
           if [ "$count" -gt 0 ]; then
             i=1
             echo "$files" | while IFS= read -r file; do
-              echo "| $i | [${file#./}](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.repository.default_branch }}/${file#./}) |" >> databinding_files_report.md
+              echo "| $i | [${file#./}](${SERVER_URL}/${REPO}/blob/${DEFAULT_BRANCH}/${file#./}) |" >> databinding_files_report.md
               i=$((i + 1))
             done
           else
@@ -62,10 +66,12 @@ jobs:
 
       - name: GitHubのIssueを作成
         uses: actions/github-script@v7
+        env:
+          ISSUE_BODY: ${{ steps.prepare-issue.outputs.issue_body }}
         with:
           script: |
             const title = `Databindingの残り一覧 - ${new Date().toISOString().split('T')[0]}`;
-            const body = `${{ steps.prepare-issue.outputs.issue_body }}`;
+            const body = process.env['ISSUE_BODY'];
             
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
