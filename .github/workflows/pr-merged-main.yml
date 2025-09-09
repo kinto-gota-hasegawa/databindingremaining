@@ -1,5 +1,4 @@
-name: PR Merged main
-
+name: PR Merged To Main Create Tag and Release
 on:
   pull_request:
     types: [closed]
@@ -12,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Extract version from branch name
         id: extract_version
         run: |
@@ -35,14 +34,14 @@ jobs:
             echo "Branch name does not match release/x.x.x pattern"
             exit 1
           fi
-      
+
       - name: Create tag
         run: |
-          git config user.name "GitHub Actions"
+          git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git tag ${{ steps.extract_version.outputs.tag_name }}
           git push origin ${{ steps.extract_version.outputs.tag_name }}
-      
+
       - name: Create Release
         uses: actions/create-release@v1
         env:
@@ -51,7 +50,6 @@ jobs:
           tag_name: ${{ steps.extract_version.outputs.tag_name }}
           release_name: ${{ steps.extract_version.outputs.tag_name }}
           draft: false
-          release: false
           body: |
             Release ${{ steps.extract_version.outputs.tag_name }}
             
