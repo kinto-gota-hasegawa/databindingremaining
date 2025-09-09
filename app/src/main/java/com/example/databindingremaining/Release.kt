@@ -1,3 +1,3 @@
 package com.example.databindingremaining
 
-const val release4270 = "4.2.70"
+const val release4261 = "4.26.1"
